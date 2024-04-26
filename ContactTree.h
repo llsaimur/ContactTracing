@@ -2,14 +2,14 @@
 #include "TreeNode.cpp"
 
 template <typename T>
-class ContactTree {
+class ContactTree
+{
 private:
     TreeNode<T>* root;
 
-    void updateTotalCases(TreeNode<T>* node);
-    TreeNode<T>* findNode(const T& medId);
-    void deleteSubtree(TreeNode<T>* node);
-    void printHierarchicalTree(TreeNode<T>* node);
+    void UpdateTotalCases(TreeNode<T>* node);
+    void DeleteSubtree(TreeNode<T>* node);
+    
 
 public:
     ContactTree();
@@ -26,4 +26,5 @@ public:
     void PrintContactCases(const T& medId);
     void PrintContactTree();
     void PrintHierarchicalTree();
+    void PrintTreeRecursive(TreeNode<T>* node, int i);
 };

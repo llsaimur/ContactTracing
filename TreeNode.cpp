@@ -1,7 +1,8 @@
 #include <list>
 
 template <typename T>
-class TreeNode {
+class TreeNode
+{
 public:
     T medicareId;
     int directContacts = 0;

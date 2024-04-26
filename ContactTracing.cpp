@@ -5,10 +5,10 @@ using namespace std;
 
 //We decided to choose a queue as our linear data structure for our Contract Tracing system.
 //With a queue we can add new contacts at the end of the queue as well as retrieve one from the front.
-//The complexity of the queue is constant O(1), this means that our traversal will be efficent
+//Both enqueue and dequeue operations in Queue have O(1) complexity, this means that our traversal will be efficent
 //no matter how many contacts there are. Using a queue also allows us to use the Breadth first Search Traversal
 //algorithm, this helps us move through the contact tree from top to bottom, and a queue pairs perfectly with this
-//since it follows the first in first out rule.
+//since it follows the first in first out rule, thus making it the most suitable choice for this data structure.
 
 ///////////////////////////////////////////////////////////////
 
@@ -19,50 +19,61 @@ ContactTree<T>::ContactTree() : root(nullptr) {}
 
 // Destructor
 template <typename T>
-ContactTree<T>::~ContactTree() {
+ContactTree<T>::~ContactTree()
+{
     if (root != nullptr) {
-        deleteSubtree(root);
+        DeleteSubtree(root);
     }
 }
 
-// Method to check if the tree is empty
+//check if the tree is empty
 template <typename T>
-bool ContactTree<T>::IsEmpty() {
+bool ContactTree<T>::IsEmpty()
+{
     return root == nullptr;
 }
 
-// Method to get the size of the tree
+//get the size of the tree
 template <typename T>
-int ContactTree<T>::GetSize() {
-    int size = 0;
-    Queue<TreeNode<T>*> nodesQueue;
-
-    //check if not empty
-    if (root != nullptr) {
-        nodesQueue.Enqueue(root);
-    }
-
-    // keep looping until queue empty (breadth-first search) traversal
-    while (!nodesQueue.IsEmpty()) {
-
-        // first node gets dequeued and assigned to a pointer (current)
-        TreeNode<T>* current = nodesQueue.Front();
-        nodesQueue.Dequeue();
-        //update
-        size++;
-
-        // each child node (pointers in directContactsPtrList) of current are added to nodesQueue
-        for (TreeNode<T>* child : current->directContactsPtrList) {
-            nodesQueue.Enqueue(child);
-        }
-    }
-
-    return size;
+int ContactTree<T>::GetSize()
+{
+    return root->totalCases;
 }
 
-// Method to add patient zero
+////get the size of the tree
+//template <typename T>
+//int ContactTree<T>::GetSize()
+// {
+//    int size = 0;
+//    Queue<TreeNode<T>*> nodesQueue;
+//
+//    //check if not empty
+//    if (root != nullptr) {
+//        nodesQueue.Enqueue(root);
+//    }
+//
+//    // keep looping until queue empty (breadth-first search) traversal
+//    while (!nodesQueue.IsEmpty()) {
+//
+//        // first node gets dequeued and assigned to a pointer (current)
+//        TreeNode<T>* current = nodesQueue.Front();
+//        nodesQueue.Dequeue();
+//        //update
+//        size++;
+//
+//        // each child node (pointers in directContactsPtrList) of current are added to nodesQueue
+//        for (TreeNode<T>* child : current->directContactsPtrList) {
+//            nodesQueue.Enqueue(child);
+//        }
+//    }
+//
+//    return size;
+//}
+
+//add patient zero
 template <typename T>
-void ContactTree<T>::AddPatient0(const T& medId) {
+void ContactTree<T>::AddPatient0(const T& medId)
+{
     //check if exist already
     if (root != nullptr) {
         cout << "Patient 0 already exists." << endl;
@@ -73,11 +84,12 @@ void ContactTree<T>::AddPatient0(const T& medId) {
     root = new TreeNode<T>(medId);
 }
 
-// Method to add contact between two nodes
+//add contact between two nodes
 template <typename T>
-void ContactTree<T>::AddContact(const T& parentMedId, const T& childMedId) {
+void ContactTree<T>::AddContact(const T& parentMedId, const T& childMedId)
+{
     //find parent node in the tree
-    TreeNode<T>* parentNode = findNode(parentMedId);
+    TreeNode<T>* parentNode = LookUpContact(parentMedId);
     if (parentNode == nullptr) {
         cout << "Parent with medicare ID " << parentMedId << " not found." << endl;
         return;
@@ -89,144 +101,13 @@ void ContactTree<T>::AddContact(const T& parentMedId, const T& childMedId) {
 
     //update contacts/cases
     parentNode->directContacts++;
-    updateTotalCases(parentNode);
+    UpdateTotalCases(parentNode);
 }
 
-// Method to look up a contact by medicare ID
+//look up a contact by medicare ID
 template <typename T>
-TreeNode<T>* ContactTree<T>::LookUpContact(const T& medId) {
-    return findNode(medId);
-}
-
-// Method to delete a contact and its subtree
-template <typename T>
-void ContactTree<T>::DeleteContact(const T& medId) {
-    //find node to delete
-    TreeNode<T>* nodeToDelete = findNode(medId);
-    if (nodeToDelete == nullptr) {
-        cout << "Contact with medicare ID " << medId << " not found." << endl;
-        return;
-    }
-
-    // If the node to delete is the root
-    if (nodeToDelete == root) {
-        deleteSubtree(root);
-        root = nullptr; // Update root pointer to indicate an empty tree
-        return;
-    }
-
-    // once node to delete found, check if it has parent node so we can remove it from parents list of direct contacts
-    TreeNode<T>* parent = nodeToDelete->parentPtr;
-    if (parent != nullptr) {
-
-        //i had to look up online
-        typename list<TreeNode<T>*>::iterator it;
-        // we have to do this in order to inform compiler that the line above is a type and not a variable
-        //iterate tru the list of nodes(child) of the parent
-        for (it = parent->directContactsPtrList.begin(); it != parent->directContactsPtrList.end(); ++it) {
-            if (*it == nodeToDelete) {
-                parent->directContactsPtrList.erase(it);
-                //update
-                parent->directContacts--;
-                updateTotalCases(parent);
-                break; // Stop searching once found
-            }
-        }
-    }
-
-    deleteSubtree(nodeToDelete);
-}
-
-// Method to display contact information by medicare ID
-template <typename T>
-void ContactTree<T>::DisplayContact(const T& medId) {
-    TreeNode<T>* node = findNode(medId);
-    if (node == nullptr) {
-        cout << "Contact with medicare ID " << medId << " not found." << endl;
-        return;
-    }
-    DisplayContact(node);
-}
-
-// Method to display contact information by TreeNode pointer
-template <typename T>
-void ContactTree<T>::DisplayContact(TreeNode<T>* node) {
-    cout << "Medicare ID: " << node->medicareId << endl;
-    cout << "Direct Contacts: " << node->directContacts << endl;
-    cout << "Total Cases: " << node->totalCases << endl;
-}
-
-// Method to trace the source of infection given a medicare ID
-template <typename T>
-void ContactTree<T>::TraceSource(const T& medId) {
-    TreeNode<T>* node = findNode(medId);
-    if (node == nullptr) {
-        cout << "Contact with medicare ID " << medId << " not found." << endl;
-        return;
-    }
-
-    //if node found, initialize pointer for node
-    TreeNode<T>* current = node;
-
-    //keep going until it reaches the root/parent
-    while (current != nullptr) {
-        DisplayContact(current);
-        current = current->parentPtr;
-    }
-}
-
-// Method to print contact cases given a medicare ID
-template <typename T>
-void ContactTree<T>::PrintContactCases(const T& medId) {
-    TreeNode<T>* node = findNode(medId);
-    if (node == nullptr) {
-        cout << "Contact with medicare ID " << medId << " not found." << endl;
-        return;
-    }
-
-    for (TreeNode<T>* contact : node->directContactsPtrList) {
-        DisplayContact(contact);
-    }
-}
-
-// Method to print the entire contact tree using BFS
-template <typename T>
-void ContactTree<T>::PrintContactTree() {
-
-    //make a queue
-    Queue<TreeNode<T>*> nodesQueue;
-
-    if (root != nullptr) {
-        nodesQueue.Enqueue(root);
-    }
-
-
-    while (!nodesQueue.IsEmpty()) {
-        //dequeue the first node and store it in pointer current
-        TreeNode<T>* current = nodesQueue.Front();
-        nodesQueue.Dequeue();
-
-        DisplayContact(current);
-
-        //then keep looping through each child node of current and add it to the queue
-        for (TreeNode<T>* child : current->directContactsPtrList) {
-            nodesQueue.Enqueue(child);
-        }
-    }
-}
-
-// Method to print hierarchical tree
-template <typename T>
-void ContactTree<T>::PrintHierarchicalTree() {
-    if (root == nullptr) {
-        cout << "Tree is empty." << endl;
-        return;
-    }
-    printHierarchicalTree(root);
-}
-
-template <typename T>
-TreeNode<T>* ContactTree<T>::findNode(const T& medId) {
+TreeNode<T>* ContactTree<T>::LookUpContact(const T& medId)
+{
     //check if tree empty
     if (root == nullptr)
         return nullptr;
@@ -253,9 +134,183 @@ TreeNode<T>* ContactTree<T>::findNode(const T& medId) {
     return nullptr; // no match
 }
 
+////delete a contact and its subtree
+//template <typename T>
+//void ContactTree<T>::DeleteContact(const T& medId)
+// {
+//    //find node to delete
+//    TreeNode<T>* nodeToDelete = findNode(medId);
+//    if (nodeToDelete == nullptr) {
+//        cout << "Contact with medicare ID " << medId << " not found." << endl;
+//        return;
+//    }
+//
+//    // If the node to delete is the root
+//    if (nodeToDelete == root) {
+//        DeleteSubtree(root);
+//        root = nullptr; // update pointer to indicate empty tree
+//        return;
+//    }
+//
+//    // node has a parent node?, if yes store the pointer(parent) to the parent node of the nodeToDelete
+//    TreeNode<T>* parent = nodeToDelete->parentPtr;
+//    if (parent != nullptr) {
+//
+//        //iterate tru the list of nodes(child) of the parent
+//        for (TreeNode<T>* child : parent->directContactsPtrList) {
+//            if (child == nodeToDelete) {
+//                parent->directContactsPtrList.remove(nodeToDelete);
+//                // Update
+//                parent->directContacts--;
+//                UpdateTotalCases(parent);
+//                break; // Stop searching once found
+//            }
+//        }
+//    }
+//
+//    DeleteSubtree(nodeToDelete);
+//}
+
 template <typename T>
-void ContactTree<T>::deleteSubtree(TreeNode<T>* node) {
-        
+void ContactTree<T>::DeleteContact(const T& medId)
+{
+    //find node to delete
+    TreeNode<T>* nodeToDelete = LookUpContact(medId);
+
+    if (nodeToDelete == nullptr) {
+        cout << "Contact with medicare ID " << medId << " not found." << endl;
+        return;
+    }
+
+    if (nodeToDelete == root) {
+        DeleteSubtree(root);
+        root = nullptr; // Update root pointer to indicate an empty tree
+        return;
+    }
+
+    // node has a parent node?, if yes store the pointer(parent) to the parent node of the nodeToDelete
+    TreeNode<T>* parent = nodeToDelete->parentPtr;
+
+    DeleteSubtree(nodeToDelete);
+
+    parent->directContactsPtrList.remove(nodeToDelete);
+    parent->directContacts--;
+    UpdateTotalCases(parent);
+}
+
+//display contact information by medicare ID
+template <typename T>
+void ContactTree<T>::DisplayContact(const T& medId)
+{
+    TreeNode<T>* node = LookUpContact(medId);
+    if (node == nullptr) {
+        cout << "Contact with medicare ID " << medId << " not found." << endl;
+        return;
+    }
+    DisplayContact(node);
+}
+
+//display contact information by TreeNode pointer
+template <typename T>
+void ContactTree<T>::DisplayContact(TreeNode<T>* node)
+{
+    cout << "Medicare ID: " << node->medicareId << endl;
+    cout << "Direct Contacts: " << node->directContacts << endl;
+    cout << "Total Cases: " << node->totalCases << endl;
+}
+
+//trace the source of infection given a medicare ID
+template <typename T>
+void ContactTree<T>::TraceSource(const T& medId)
+{
+    TreeNode<T>* node = LookUpContact(medId);
+    if (node == nullptr) {
+        cout << "Contact with medicare ID " << medId << " not found." << endl;
+        return;
+    }
+
+    //if node found, initialize pointer for node
+    TreeNode<T>* current = node;
+
+    //keep going until it reaches the root/parent
+    while (current != nullptr) {
+        DisplayContact(current);
+        current = current->parentPtr;
+    }
+}
+
+//print contact cases given a medicare ID
+template <typename T>
+void ContactTree<T>::PrintContactCases(const T& medId)
+{
+    TreeNode<T>* node = LookUpContact(medId);
+    if (node == nullptr) {
+        cout << "Contact with medicare ID " << medId << " not found." << endl;
+        return;
+    }
+
+    for (TreeNode<T>* contact : node->directContactsPtrList) {
+        DisplayContact(contact);
+    }
+}
+
+//print the entire contact tree using BFS
+template <typename T>
+void ContactTree<T>::PrintContactTree()
+{
+
+    //make a queue
+    Queue<TreeNode<T>*> nodesQueue;
+
+    if (root != nullptr) {
+        nodesQueue.Enqueue(root);
+    }
+
+
+    while (!nodesQueue.IsEmpty()) {
+        //dequeue the first node and store it in pointer current
+        TreeNode<T>* current = nodesQueue.Front();
+        nodesQueue.Dequeue();
+
+        DisplayContact(current);
+
+        //then keep looping through each child node of current and add it to the queue
+        for (TreeNode<T>* child : current->directContactsPtrList) {
+            nodesQueue.Enqueue(child);
+        }
+    }
+}
+
+////print hierarchical tree
+//template <typename T>
+//void ContactTree<T>::PrintHierarchicalTree()
+// {
+//    if (root == nullptr) {
+//        cout << "Tree is empty." << endl;
+//        return;
+//    }
+//
+//    Queue<TreeNode<T>*> nodesQueue;
+//    nodesQueue.Enqueue(root);
+//
+//    while (!nodesQueue.IsEmpty()) {
+//        // Get the front node from the queue
+//        TreeNode<T>* current = nodesQueue.Front();
+//        nodesQueue.Dequeue();
+//        cout << "Medicare ID: " << current->medicareId << endl;
+//
+//        // Enqueue all child nodes of the current node
+//        for (TreeNode<T>* child : current->directContactsPtrList) {
+//            nodesQueue.Enqueue(child);
+//        }
+//    }
+//}
+
+
+
+template <typename T>
+void ContactTree<T>::DeleteSubtree(TreeNode<T>* node)
+{
     if (node == nullptr) return;
 
     // initialize queue
@@ -274,7 +329,7 @@ void ContactTree<T>::deleteSubtree(TreeNode<T>* node) {
         // each child node (pointers in directContactsPtrList) of current are added to nodesQueue
         for (TreeNode<T>* child : current->directContactsPtrList) {
             //nodesQueue.Dequeue(child);
-            nodesQueue.Dequeue();
+            nodesQueue.Enqueue(child);
         }
 
         delete current;
@@ -282,26 +337,44 @@ void ContactTree<T>::deleteSubtree(TreeNode<T>* node) {
 }
 
 template <typename T>
-void ContactTree<T>::printHierarchicalTree(TreeNode<T>* node) {
-    if (node == nullptr) return;
+void ContactTree<T>::PrintHierarchicalTree()
+{
+    if (root == nullptr) {
+        cout << "Tree is empty." << endl;
+        return;
+    }
+    PrintTreeRecursive(root, 0);
+}
 
-    cout << node->medicareId << endl;
+template <typename T>
+void ContactTree<T>::PrintTreeRecursive(TreeNode<T>* node, int i)
+{
+    if (node == nullptr) {
+        return;
+    }
+
+    for (int j = 0; j < i; j++)
+        cout << "\t";
+
+    cout << "Medicare ID: " << node->medicareId << endl;
 
     for (TreeNode<T>* child : node->directContactsPtrList) {
-        printHierarchicalTree(child);
+        PrintTreeRecursive(child, i + 1);
     }
 }
 
-// function to update totalCases up the tree
+//function to update totalCases up the tree
 template <typename T>
-void ContactTree<T>::updateTotalCases(TreeNode<T>* node) {
-        while (node != nullptr) {
-            node->totalCases++;
-            node = node->parentPtr;
-        }
+void ContactTree<T>::UpdateTotalCases(TreeNode<T>* node)
+{
+    while (node != nullptr) {
+        node->totalCases++;
+        node = node->parentPtr;
+    }
 }
 //
-//int main() {
+//int main()
+// {
 //    // Testing the ContactTree class with string values
 //    ContactTree<string> tree;
 //
@@ -327,9 +400,11 @@ void ContactTree<T>::updateTotalCases(TreeNode<T>* node) {
 //    return 0;
 //}
 
-int main() {
+int main()
+{
     // Testing the ContactTree class with int values
     ContactTree<int> tree;
+
 
     // add patient zero
     tree.AddPatient0(1);
@@ -342,6 +417,25 @@ int main() {
     tree.AddContact(3, 6);
 
     cout << "Contact Info:\n";
+    // contact information
+    tree.DisplayContact(2);
+    cout << "\nHierarchchical Tree:\n ";
+    // hierarchical tree
+    tree.PrintHierarchicalTree();
+    cout << "\nPatients in Contact Tree:\n ";
+    // contact tree
+    tree.PrintContactTree();
+    cout << "\nContact cases of patient:\n ";
+    // contact cases of a given patient
+    tree.PrintContactCases(3);
+    cout << "\nTrace source of contact:\n ";
+    // trace source
+    tree.TraceSource(4);
+
+    cout << "\n\nDeleting contact with the ID of 2...\n ";
+    tree.DeleteContact(2);
+
+    cout << "\nContact Info:\n";
     // contact information
     tree.DisplayContact(2);
     cout << "\nHierarchchical Tree:\n ";
